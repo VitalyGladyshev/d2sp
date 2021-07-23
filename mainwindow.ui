@@ -6,13 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>540</width>
+    <width>560</width>
     <height>550</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>540</width>
+    <width>560</width>
     <height>550</height>
    </size>
   </property>
@@ -46,13 +46,13 @@
      <widget class="QFrame" name="frame">
       <property name="minimumSize">
        <size>
-        <width>248</width>
+        <width>268</width>
         <height>0</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>248</width>
+        <width>268</width>
         <height>16777215</height>
        </size>
       </property>
@@ -89,7 +89,7 @@
          <widget class="QPushButton" name="pushButton_rects_load">
           <property name="geometry">
            <rect>
-            <x>30</x>
+            <x>3</x>
             <y>350</y>
             <width>75</width>
             <height>26</height>
@@ -104,7 +104,7 @@
            <rect>
             <x>2</x>
             <y>2</y>
-            <width>238</width>
+            <width>258</width>
             <height>131</height>
            </rect>
           </property>
@@ -156,7 +156,7 @@
           <widget class="QPushButton" name="pushButton_met_set">
            <property name="geometry">
             <rect>
-             <x>70</x>
+             <x>80</x>
              <y>89</y>
              <width>91</width>
              <height>26</height>
@@ -218,7 +218,7 @@
          <widget class="QPushButton" name="pushButton_rects_clear">
           <property name="geometry">
            <rect>
-            <x>130</x>
+            <x>187</x>
             <y>350</y>
             <width>75</width>
             <height>26</height>
@@ -233,7 +233,7 @@
            <rect>
             <x>3</x>
             <y>136</y>
-            <width>238</width>
+            <width>258</width>
             <height>131</height>
            </rect>
           </property>
@@ -330,7 +330,7 @@
           <widget class="QPushButton" name="pushButton_rect_set">
            <property name="geometry">
             <rect>
-             <x>70</x>
+             <x>80</x>
              <y>89</y>
              <width>91</width>
              <height>26</height>
@@ -346,7 +346,7 @@
            <rect>
             <x>3</x>
             <y>270</y>
-            <width>238</width>
+            <width>258</width>
             <height>61</height>
            </rect>
           </property>
@@ -361,7 +361,7 @@
             <rect>
              <x>20</x>
              <y>20</y>
-             <width>201</width>
+             <width>221</width>
              <height>26</height>
             </rect>
            </property>
@@ -375,6 +375,19 @@
             <number>5</number>
            </property>
           </widget>
+         </widget>
+         <widget class="QPushButton" name="pushButton_rects_generate">
+          <property name="geometry">
+           <rect>
+            <x>82</x>
+            <y>350</y>
+            <width>101</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Генерировать</string>
+          </property>
          </widget>
         </widget>
        </item>
