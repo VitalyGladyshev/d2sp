@@ -32,9 +32,24 @@ private:
     QFile qtclMetFile;
     QFile qtclRectsFile;
 
+    quint32 ui32TableRowsTotal;
+    quint32 ui32TableRowsCurr;
+
     qint32 TestValue(QString strValue, quint32 ui32Border);
+    void ErrorMessageBox(QString strMessageText);
+    void TableAddRow();
     void MetToXml();
     void PlaceRects();
+    void ClearImage();
+    void RectsToXML();
+    void ClearTable();
+
+    struct StructRect
+    {
+        quint32 ui32RectW;
+        quint32 ui32RectH;
+    };
+    QList<StructRect> qlistRects;
 };
 
 #endif // MAINWINDOW_H

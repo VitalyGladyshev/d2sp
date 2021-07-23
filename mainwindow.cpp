@@ -5,6 +5,7 @@
 #include <QtXml>
 #include <QTextStream>
 #include <QMessageBox>
+#include <QStandardItemModel>
 
 #define MET_W 286
 #define MET_H 15
@@ -74,6 +75,21 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pushButton_rects_generate, SIGNAL(pressed()), SLOT(slotRectsGenerate()));
     connect(ui->pushButton_rects_clear, SIGNAL(pressed()), SLOT(slotRectsClear()));
 
+    ui32TableRowsTotal = 20;
+    ui32TableRowsCurr = 0;
+    QStringList horizontalHeader;
+    horizontalHeader.append("Ширина");
+    horizontalHeader.append("Длина");
+    ui->tableWidget->setHorizontalHeaderLabels(horizontalHeader);
+
+    for (quint32 i = 0; i < ui32TableRowsTotal; i++)
+        for (int j = 0; j < 2; j++)
+        {
+            QTableWidgetItem *ptWi = new QTableWidgetItem("");
+            ui->tableWidget->setItem(i, j, ptWi);
+        }
+
+    qlistRects.clear();
     // Загружаем список деталей
     slotRectsLoad();
 }
@@ -89,12 +105,7 @@ qint32 MainWindow::TestValue(QString strValue, quint32 ui32Border)
     else
     {
         qDebug() << "Некорректный размер: " << strValue << endl;
-        QMessageBox *pqtclErrorMessage = new QMessageBox(QMessageBox::Critical,
-                                                         "Ошибка",
-                                                         "Некорректный размер!",
-                                                         QMessageBox::Ok);
-        pqtclErrorMessage->exec();
-        delete pqtclErrorMessage;
+        ErrorMessageBox("Некорректный размер!");
         return -1;
     }
 }
@@ -149,7 +160,7 @@ void MainWindow::slotMetSet()
         ui->lineEdit_met_h_value->setText(QString("%1").arg(ui32MetH));
     }
 
-    qDebug() << "Ширина листа: " << ui32MetW << "мм. Длина листа: " << ui32MetH << " м." << endl;
+    qDebug() << "Ширина листа: " << ui32MetW << " мм. Длина листа: " << ui32MetH << " м." << endl;
 
     //сохраняем в xml
     MetToXml();
@@ -158,39 +169,130 @@ void MainWindow::slotMetSet()
     PlaceRects();
 }
 //------------------------------------------------------------------------------
+void MainWindow::ErrorMessageBox(QString strMessageText)
+{
+    //Сообщение об ошибке
+    QMessageBox *pqtclErrorMessage = new QMessageBox(QMessageBox::Critical,
+                                                     "Ошибка",
+                                                     strMessageText,
+                                                     QMessageBox::Ok);
+    pqtclErrorMessage->exec();
+    delete pqtclErrorMessage;
+}
+//------------------------------------------------------------------------------
 void MainWindow::slotRectSet()
 {
     //Обработчик кнопки: Добавить новую деталь
 
-    qDebug() << "Добавить новую деталь" << endl; //Отладочное сообщение
+    qint32 i32Res = TestValue(ui->lineEdit_rect_w_value->text(), ui32MetW);
+    if (i32Res != -1)
+    {
+        StructRect stctRect;
+        stctRect.ui32RectW = i32Res;
+
+        i32Res = TestValue(ui->lineEdit_rect_h_value->text(), ui32MetW*1000);
+        if (i32Res != -1)
+        {
+            stctRect.ui32RectH = i32Res;
+            qlistRects.append(stctRect);
+            qDebug() << "Ширина детали: " << ui32MetW << " мм. Длина детали: " << ui32MetH << " мм." << endl;
+            if (ui32TableRowsCurr == ui32TableRowsTotal)
+                TableAddRow();
+            ui->tableWidget->item(ui32TableRowsCurr, 0)->setText(QString("%1").arg(stctRect.ui32RectW));
+            ui->tableWidget->item(ui32TableRowsCurr++, 1)->setText(QString("%1").arg(stctRect.ui32RectH));
+            RectsToXML();
+            PlaceRects();
+        }
+        else
+            ErrorMessageBox("Длина детали больше длины листа!");
+    }
+    else
+        ErrorMessageBox("Ширина детали больше ширины листа!");
+}
+//------------------------------------------------------------------------------
+void MainWindow::TableAddRow()
+{
+    ui->tableWidget->insertRow(ui32TableRowsTotal);
+    for (int j = 0; j < 2; j++)
+    {
+        QTableWidgetItem *ptWi = new QTableWidgetItem("");
+        ui->tableWidget->setItem(ui32TableRowsTotal, j, ptWi);
+    }
+    ui32TableRowsTotal += 1;
 }
 //------------------------------------------------------------------------------
 void MainWindow::slotRectsLoad()
 {
     //Обработчик кнопки: Загрузить файл с размерами деталей
 
+    PlaceRects();
     qDebug() << "Загрузить файл с размерами деталей" << endl; //Отладочное сообщение
 }
 //------------------------------------------------------------------------------
 void MainWindow::slotRectsGenerate()
 {
     //Обработчик кнопки: Генерировать 10 деталей с произвольными размерами
-
-    qDebug() << "Генерировать 10 деталей с произвольными размерами" << endl; //Отладочное сообщение
+    qDebug() << "Генерируем 10 деталей с произвольными размерами";
+    StructRect stctRect;
+    for(int i=0; i<10; i++)
+    {
+        stctRect.ui32RectW = qrand() % (ui32MetW - 10) + 10;
+        stctRect.ui32RectH = qrand() % int(ui32MetW * 1.2 - 10) + 10;
+        qlistRects.append(stctRect);
+        qDebug() << "Ширина детали: " << ui32MetW << " мм. Длина детали: " << ui32MetH << " мм." << endl;
+        if (ui32TableRowsCurr == ui32TableRowsTotal)
+            TableAddRow();
+        ui->tableWidget->item(ui32TableRowsCurr, 0)->setText(QString("%1").arg(stctRect.ui32RectW));
+        ui->tableWidget->item(ui32TableRowsCurr++, 1)->setText(QString("%1").arg(stctRect.ui32RectH));
+    }
+    RectsToXML();
+    PlaceRects();
 }
 //------------------------------------------------------------------------------
 void MainWindow::slotRectsClear()
 {
     //Обработчик кнопки: Очистить список деталей
-
     qDebug() << "Очистить список деталей" << endl; //Отладочное сообщение
+
+    qlistRects.clear();
+    ClearTable(); //Очищаем таблицу
+    RectsToXML(); //Очищаем XML файл
+    ClearImage(); //Очищаем изображение
+}
+//------------------------------------------------------------------------------
+void MainWindow::RectsToXML()
+{
+    //Сохраняем детали в файл
+
+    qDebug() << "Сохраняем детали в файл" << endl; //Отладочное сообщение
+}
+//------------------------------------------------------------------------------
+void MainWindow::ClearImage()
+{
+    //Очистить изображение
+
+    qDebug() << "Рисуем лист металла в масштабе" << endl; //Отладочное сообщение
+}
+//------------------------------------------------------------------------------
+void MainWindow::ClearTable()
+{
+    //Очищаем таблицу
+    for(quint32 i = 0; i < ui32TableRowsTotal; i++)
+        for(int j = 0; j < 2; j++)
+        {
+            ui->tableWidget->item(i, 0)->setText("");
+            ui->tableWidget->item(i, 1)->setText("");
+        }
+    ui32TableRowsCurr = 0;
 }
 //------------------------------------------------------------------------------
 void MainWindow::PlaceRects()
 {
     //Размещаем детали
-
+    ClearImage(); //Очистить изображение
     qDebug() << "Размещаем детали" << endl; //Отладочное сообщение
+
+
 }
 //------------------------------------------------------------------------------
 MainWindow::~MainWindow()
