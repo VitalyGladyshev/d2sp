@@ -6,6 +6,7 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include <QStandardItemModel>
+#include <QPainter>
 
 #define MET_W 286
 #define MET_H 15
@@ -19,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    qsrand(QTime::currentTime().msec());
     QString qtstrApplicationPath = QApplication::applicationDirPath();
 
     // Загрузка габаритов материала
@@ -90,6 +92,8 @@ MainWindow::MainWindow(QWidget *parent) :
         }
 
     qlistRects.clear();
+    bImgClean = true;
+    QWidget::repaint();
     // Загружаем список деталей
     slotRectsLoad();
 }
@@ -225,7 +229,8 @@ void MainWindow::slotRectsLoad()
 {
     //Обработчик кнопки: Загрузить файл с размерами деталей
 
-    PlaceRects();
+    if (false)
+        PlaceRects();
     qDebug() << "Загрузить файл с размерами деталей" << endl; //Отладочное сообщение
 }
 //------------------------------------------------------------------------------
@@ -257,7 +262,8 @@ void MainWindow::slotRectsClear()
     qlistRects.clear();
     ClearTable(); //Очищаем таблицу
     RectsToXML(); //Очищаем XML файл
-    ClearImage(); //Очищаем изображение
+    bImgClean = true;
+    QWidget::repaint(); //Очищаем изображение
 }
 //------------------------------------------------------------------------------
 void MainWindow::RectsToXML()
@@ -267,11 +273,19 @@ void MainWindow::RectsToXML()
     qDebug() << "Сохраняем детали в файл" << endl; //Отладочное сообщение
 }
 //------------------------------------------------------------------------------
-void MainWindow::ClearImage()
+void MainWindow::paintEvent(QPaintEvent *)
 {
-    //Очистить изображение
-
-    qDebug() << "Рисуем лист металла в масштабе" << endl; //Отладочное сообщение
+    if (bImgClean)
+    { //Рисуем лист металла в масштабе
+        QPainter painter(this);
+//        QBrush brush(ColorGenerator(), Qt::SolidPattern);
+        QBrush brush(Qt::white, Qt::SolidPattern);
+        painter.fillRect(ui->widget_left_top->width() + 8,
+                         3,
+                         ui32MetW,
+                         ui->widget_viz->height()-3,
+                         brush);
+    }
 }
 //------------------------------------------------------------------------------
 void MainWindow::ClearTable()
@@ -289,10 +303,25 @@ void MainWindow::ClearTable()
 void MainWindow::PlaceRects()
 {
     //Размещаем детали
-    ClearImage(); //Очистить изображение
+    bImgClean = false;
     qDebug() << "Размещаем детали" << endl; //Отладочное сообщение
 
 
+}
+//------------------------------------------------------------------------------
+QRgb MainWindow::ColorGenerator()
+{
+    //Генератор цвета
+    QRgb rgb;
+
+    int r = rand() % 255;
+    int g = rand() % 255;
+    int b = rand() % 255;
+
+    rgb = qRgba(r, g, b, 255);
+
+    qDebug() << "Генерируем случайный цвет" << rgb << QColor::fromRgb(rgb) << endl; //Отладочное сообщение
+    return rgb;
 }
 //------------------------------------------------------------------------------
 MainWindow::~MainWindow()

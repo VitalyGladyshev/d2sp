@@ -35,14 +35,16 @@ private:
     quint32 ui32TableRowsTotal;
     quint32 ui32TableRowsCurr;
 
+    bool bImgClean;
+
     qint32 TestValue(QString strValue, quint32 ui32Border);
     void ErrorMessageBox(QString strMessageText);
     void TableAddRow();
     void MetToXml();
     void PlaceRects();
-    void ClearImage();
     void RectsToXML();
     void ClearTable();
+    QRgb ColorGenerator();
 
     struct StructRect
     {
@@ -50,6 +52,9 @@ private:
         quint32 ui32RectH;
     };
     QList<StructRect> qlistRects;
+
+protected:
+    void paintEvent(QPaintEvent *);
 };
 
 #endif // MAINWINDOW_H
