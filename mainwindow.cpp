@@ -81,9 +81,24 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pushButton_rects_generate, SIGNAL(pressed()), SLOT(slotRectsGenerate()));
     connect(ui->pushButton_rects_clear, SIGNAL(pressed()), SLOT(slotRectsClear()));
 
+    ui->comboBox_algo->addItem("NFDH (Next Fit Decreasing High)");
+    ui->comboBox_algo->addItem("FCNR (Floor Ceiling No Rotation)");
+
+    ui32MaxHeight = 0;
+    ui32NFDHHeight = 0;
+    ui32FCNRHeight = 0;
+    pqtlbMaxHeight = new QLabel(this);
+    pqtlbMaxHeight->setText("Максимальный расход: ");
+    ui->statusBar->addWidget(pqtlbMaxHeight);
+    pqtlbNFDHHeight = new QLabel(this);
+    pqtlbNFDHHeight->setText("NFDH расход: ");
+    ui->statusBar->addWidget(pqtlbNFDHHeight);
+    pqtlbFCNRHeight = new QLabel(this);
+    pqtlbFCNRHeight->setText("FCNR расход: ");
+    ui->statusBar->addWidget(pqtlbFCNRHeight);
+
     ui32TableRowsTotal = 20;
     ui32TableRowsCurr = 0;
-    ui32MaxHeight = 0;
     QStringList horizontalHeader;
     horizontalHeader.append("Ширина");
     horizontalHeader.append("Длина");
@@ -95,6 +110,7 @@ MainWindow::MainWindow(QWidget *parent) :
             QTableWidgetItem *ptWi = new QTableWidgetItem("");
             ui->tableWidget->setItem(i, j, ptWi);
         }
+    ui->tableWidget->verticalHeader()->setVisible(true);
 
     qlistRects.clear();
     qlistRectsSourceVert.clear();
@@ -446,7 +462,8 @@ void MainWindow::PlaceRects()
         qlistRectsSourceVert.append(stctRectsSourceVert);
         ui32MaxHeight += stctRectsSourceVert.ui32RectH;
     }
-    qDebug() << "Максимальная высота: " << ui32MaxHeight << endl;
+    qDebug() << "Максимальный расход: " << ui32MaxHeight << " мм." << endl;
+    pqtlbMaxHeight->setText(QString("Максимальный расход: %1 мм").arg(ui32MaxHeight));
 
     //Формируем список назначения (с параметрами размещения)
     StructRectDest stctRectsDestination;

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QFile>
+#include <QLabel>
 
 namespace Ui {
 class MainWindow;
@@ -38,6 +39,11 @@ private:
     quint32 ui32TableRowsCurr;
 
     quint32 ui32MaxHeight;
+    QLabel *pqtlbMaxHeight;
+    quint32 ui32NFDHHeight;
+    QLabel *pqtlbNFDHHeight;
+    quint32 ui32FCNRHeight;
+    QLabel *pqtlbFCNRHeight;
 
     qint32 TestValue(QString strValue, quint32 ui32Border);
     void ErrorMessageBox(QString strMessageText);

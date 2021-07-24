@@ -341,7 +341,7 @@
            </property>
           </widget>
          </widget>
-         <widget class="QGroupBox" name="groupBox_2">
+         <widget class="QGroupBox" name="groupBox_NewRect">
           <property name="geometry">
            <rect>
             <x>3</x>
@@ -355,7 +355,7 @@
           </property>
           <widget class="QComboBox" name="comboBox_algo">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="geometry">
             <rect>
@@ -366,10 +366,10 @@
             </rect>
            </property>
            <property name="editable">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="currentText">
-            <string>FCNR (Floor Ceiling No Rotation)</string>
+            <string/>
            </property>
            <property name="maxVisibleItems">
             <number>5</number>
