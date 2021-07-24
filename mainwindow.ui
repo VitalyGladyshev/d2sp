@@ -393,6 +393,9 @@
        </item>
        <item>
         <widget class="QTableWidget" name="tableWidget">
+         <property name="tabKeyNavigation">
+          <bool>false</bool>
+         </property>
          <property name="rowCount">
           <number>20</number>
          </property>
@@ -467,7 +470,9 @@
   <tabstop>pushButton_rect_set</tabstop>
   <tabstop>comboBox_algo</tabstop>
   <tabstop>pushButton_rects_load</tabstop>
+  <tabstop>pushButton_rects_generate</tabstop>
   <tabstop>pushButton_rects_clear</tabstop>
+  <tabstop>tableWidget</tabstop>
  </tabstops>
  <resources/>
  <connections/>

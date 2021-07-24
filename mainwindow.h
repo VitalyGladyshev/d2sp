@@ -26,6 +26,8 @@ public slots:
 private:
     Ui::MainWindow *ui;
 
+    QString qtstrApplicationPath;
+
     quint32 ui32MetW;
     quint32 ui32MetH;
 
@@ -43,6 +45,7 @@ private:
     void MetToXml();
     void PlaceRects();
     void RectsToXML();
+    void RectsXmlLoad(QString strFileName);
     void ClearTable();
     QRgb ColorGenerator();
 
@@ -52,6 +55,17 @@ private:
         quint32 ui32RectH;
     };
     QList<StructRect> qlistRects;
+
+    QList<StructRect> qlistRectsSourceVert;
+    struct StructRectDest
+    {
+        quint32 ui32X;
+        quint32 ui32Y;
+        quint32 ui32W;
+        quint32 ui32H;
+        QRgb rgbColor;
+    };
+    QList<StructRectDest> qlistRectsDestination;
 
 protected:
     void paintEvent(QPaintEvent *);

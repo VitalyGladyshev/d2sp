@@ -7,12 +7,15 @@
 #include <QMessageBox>
 #include <QStandardItemModel>
 #include <QPainter>
+#include <QFileDialog>
 
 #define MET_W 286
 #define MET_H 15
 
 #define MET_MAX_W 700
 #define MET_MAX_H 1000000
+
+#define MULTIPLIER 1.5
 //------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -21,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     qsrand(QTime::currentTime().msec());
-    QString qtstrApplicationPath = QApplication::applicationDirPath();
+    qtstrApplicationPath = QApplication::applicationDirPath();
 
     // Загрузка габаритов материала
     qtclMetFile.setFileName(qtstrApplicationPath + "/met.xml");
@@ -92,10 +95,12 @@ MainWindow::MainWindow(QWidget *parent) :
         }
 
     qlistRects.clear();
+    qlistRectsSourceVert.clear();
+    qlistRectsDestination.clear();
     bImgClean = true;
     QWidget::repaint();
     // Загружаем список деталей
-    slotRectsLoad();
+    RectsXmlLoad(qtstrApplicationPath + "/rects.xml");
 }
 //------------------------------------------------------------------------------
 qint32 MainWindow::TestValue(QString strValue, quint32 ui32Border)
@@ -229,9 +234,62 @@ void MainWindow::slotRectsLoad()
 {
     //Обработчик кнопки: Загрузить файл с размерами деталей
 
-    if (false)
+    QString srtFileName = QFileDialog::getOpenFileName(this, QString(""), qtstrApplicationPath,
+                                            "Objects (*.xml *.xml)");
+    RectsXmlLoad(srtFileName);
+}
+//------------------------------------------------------------------------------
+void MainWindow::RectsXmlLoad(QString strFileName)
+{
+    QFile qtclRectsCustFile;
+    qtclRectsCustFile.setFileName(strFileName);
+
+    if (qtclRectsCustFile.open(QIODevice::ReadOnly))
+    {
+        QDomDocument docRects;
+        if (docRects.setContent(&qtclRectsCustFile))
+        {
+            QDomElement domEl = docRects.documentElement();
+            QDomNode domNode = domEl.firstChild();
+
+            StructRect stctRect;
+            while(!domNode.isNull())
+            {
+                QDomNode domRect = domNode.firstChild();
+                QDomElement domGetEl = domRect.toElement();
+
+                QString strTmp = "";
+                if (!domGetEl.isNull())
+                {
+                    qint32 i32Res = TestValue(domGetEl.text(), ui32MetW);
+                    if (i32Res != -1)
+                        stctRect.ui32RectW = i32Res;
+                }
+                domRect = domRect.nextSibling();
+                domGetEl = domRect.toElement();
+                if (!domGetEl.isNull())
+                {
+                    qint32 i32Res = TestValue(domGetEl.text(), ui32MetH*1000);
+                    if (i32Res != -1)
+                        stctRect.ui32RectH = i32Res;
+                }
+                qlistRects.append(stctRect);
+                if (ui32TableRowsCurr == ui32TableRowsTotal)
+                    TableAddRow();
+                ui->tableWidget->item(ui32TableRowsCurr, 0)->setText(QString("%1").arg(stctRect.ui32RectW));
+                ui->tableWidget->item(ui32TableRowsCurr++, 1)->setText(QString("%1").arg(stctRect.ui32RectH));
+                qDebug() << "Новая деталь - ширина: " << stctRect.ui32RectW << " мм. длина: " << stctRect.ui32RectH << " мм.";
+
+                domNode = domNode.nextSibling();
+            }
+        }
+        qtclRectsCustFile.close();
+    }
+    qDebug() << "Загрузили файл с размерами деталей" << endl; //Отладочное сообщение
+    RectsToXML();
+
+    if (qlistRects.size())
         PlaceRects();
-    qDebug() << "Загрузить файл с размерами деталей" << endl; //Отладочное сообщение
 }
 //------------------------------------------------------------------------------
 void MainWindow::slotRectsGenerate()
@@ -242,9 +300,9 @@ void MainWindow::slotRectsGenerate()
     for(int i=0; i<10; i++)
     {
         stctRect.ui32RectW = qrand() % (ui32MetW - 10) + 10;
-        stctRect.ui32RectH = qrand() % int(ui32MetW * 1.2 - 10) + 10;
+        stctRect.ui32RectH = qrand() % int(ui32MetW * MULTIPLIER - 10) + 10;
         qlistRects.append(stctRect);
-        qDebug() << "Ширина детали: " << ui32MetW << " мм. Длина детали: " << ui32MetH << " мм." << endl;
+        qDebug() << "\tШирина детали: " << stctRect.ui32RectW << " мм. Длина детали: " << stctRect.ui32RectH << " мм.";
         if (ui32TableRowsCurr == ui32TableRowsTotal)
             TableAddRow();
         ui->tableWidget->item(ui32TableRowsCurr, 0)->setText(QString("%1").arg(stctRect.ui32RectW));
@@ -260,6 +318,8 @@ void MainWindow::slotRectsClear()
     qDebug() << "Очистить список деталей" << endl; //Отладочное сообщение
 
     qlistRects.clear();
+    qlistRectsSourceVert.clear();
+    qlistRectsDestination.clear();
     ClearTable(); //Очищаем таблицу
     RectsToXML(); //Очищаем XML файл
     bImgClean = true;
@@ -269,8 +329,38 @@ void MainWindow::slotRectsClear()
 void MainWindow::RectsToXML()
 {
     //Сохраняем детали в файл
+    qtclRectsFile.setFileName(qtstrApplicationPath + "/rects.xml");
+    qtclRectsFile.open(QIODevice::WriteOnly);
+    QDomDocument doc("rects");
+    QDomElement rects = doc.createElement("rects");
+    doc.appendChild(rects);
 
-    qDebug() << "Сохраняем детали в файл" << endl; //Отладочное сообщение
+    for (qsizetype i = 0; i < qlistRects.size(); ++i)
+    {
+//        qDebug() << "\tШирина: " << qlistRects.at(i).ui32RectW << "Длина: " << qlistRects.at(i).ui32RectH;
+
+        QDomElement rect = doc.createElement("rect");
+        QDomAttr rectAtr = doc.createAttribute("number");
+        rectAtr.setValue(QString("%1").arg(i));
+        rect.setAttributeNode(rectAtr);
+        rects.appendChild(rect);
+
+        QDomElement rectW = doc.createElement("rectW");
+        QDomText domTextW = doc.createTextNode(QString("%1").arg(qlistRects.at(i).ui32RectW));
+        rectW.appendChild(domTextW);
+        rect.appendChild(rectW);
+
+        QDomElement rectH = doc.createElement("rectH");
+        QDomText domTextH = doc.createTextNode(QString("%1").arg(qlistRects.at(i).ui32RectH));
+        rectH.appendChild(domTextH);
+        rect.appendChild(rectH);
+    }
+
+    doc.appendChild(rects);
+    QTextStream(&qtclRectsFile) << doc.toString();
+    qtclRectsFile.close();
+
+    qDebug() << "Сохранили детали в файл" << endl; //Отладочное сообщение
 }
 //------------------------------------------------------------------------------
 void MainWindow::paintEvent(QPaintEvent *)
@@ -304,6 +394,8 @@ void MainWindow::PlaceRects()
 {
     //Размещаем детали
     bImgClean = false;
+    qlistRectsSourceVert.clear();
+    qlistRectsDestination.clear();
     qDebug() << "Размещаем детали" << endl; //Отладочное сообщение
 
 
