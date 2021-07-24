@@ -53,6 +53,7 @@ private:
     {
         quint32 ui32RectW;
         quint32 ui32RectH;
+        QRgb rgbColor;
     };
     QList<StructRect> qlistRects;   //Список деталей
 

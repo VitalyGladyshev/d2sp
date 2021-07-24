@@ -8,6 +8,7 @@
 #include <QStandardItemModel>
 #include <QPainter>
 #include <QFileDialog>
+#include <QColor>
 
 #define MET_W 286
 #define MET_H 15
@@ -201,6 +202,7 @@ void MainWindow::slotRectSet()
         if (i32Res != -1)
         {
             stctRect.ui32RectH = i32Res;
+            stctRect.rgbColor = ColorGenerator();
             qlistRects.append(stctRect);
             qDebug() << "Ширина детали: " << ui32MetW << " мм. Длина детали: " << ui32MetH << " мм." << endl;
             if (ui32TableRowsCurr == ui32TableRowsTotal)
@@ -270,6 +272,12 @@ void MainWindow::RectsXmlLoad(QString strFileName)
                     if (i32Res != -1)
                         stctRect.ui32RectH = i32Res;
                 }
+                domRect = domRect.nextSibling();
+                domGetEl = domRect.toElement();
+                if (!domGetEl.isNull())
+                {
+                    stctRect.rgbColor = QRgb(domGetEl.text().toLongLong());
+                }
                 qlistRects.append(stctRect);
                 if (ui32TableRowsCurr == ui32TableRowsTotal)
                     TableAddRow();
@@ -298,6 +306,7 @@ void MainWindow::slotRectsGenerate()
     {
         stctRect.ui32RectW = qrand() % int(ui32MetW * MULTIPLIER - 10) + 10;
         stctRect.ui32RectH = qrand() % int(ui32MetW * MULTIPLIER - 10) + 10;
+        stctRect.rgbColor = ColorGenerator();
         qlistRects.append(stctRect);
         qDebug() << "\tШирина детали: " << stctRect.ui32RectW << " мм. Длина детали: " << stctRect.ui32RectH << " мм.";
         if (ui32TableRowsCurr == ui32TableRowsTotal)
@@ -350,6 +359,11 @@ void MainWindow::RectsToXML()
         QDomText domTextH = doc.createTextNode(QString("%1").arg(qlistRects.at(i).ui32RectH));
         rectH.appendChild(domTextH);
         rect.appendChild(rectH);
+
+        QDomElement rectC = doc.createElement("rectC");
+        QDomText domTextC = doc.createTextNode(QString("%1").arg(qlistRects.at(i).rgbColor));
+        rectC.appendChild(domTextC);
+        rect.appendChild(rectC);
     }
 
     doc.appendChild(rects);
@@ -375,13 +389,22 @@ void MainWindow::paintEvent(QPaintEvent *)
         for (qsizetype i = 0; i < qlistRectsDestination.size(); ++i)
         {
             QBrush brush(qlistRectsDestination.at(i).rgbColor, Qt::SolidPattern);
-            painter.fillRect(ui->widget_left_top->width() + 8 + qlistRectsDestination.at(i).ui32X,
-                             3 + qlistRectsDestination.at(i).ui32Y,
-                             qlistRectsDestination.at(i).ui32W,
-                             qlistRectsDestination.at(i).ui32H,
-                             brush);
+            if (3 + qlistRectsDestination.at(i).ui32Y < (unsigned int)ui->widget_viz->height())
+            {
+                quint32 ui32H;
+                if (3 + qlistRectsDestination.at(i).ui32Y + qlistRectsDestination.at(i).ui32H > (unsigned int)ui->widget_viz->height())
+                    ui32H = (unsigned int)ui->widget_viz->height() - (3 + qlistRectsDestination.at(i).ui32Y);
+                else
+                    ui32H = qlistRectsDestination.at(i).ui32H;
+                painter.fillRect(ui->widget_left_top->width() + 8 + qlistRectsDestination.at(i).ui32X,
+                                 3 + qlistRectsDestination.at(i).ui32Y,
+                                 qlistRectsDestination.at(i).ui32W,
+                                 ui32H,
+                                 brush);
+            }
         }
     }
+    ui->statusBar->update();
 }
 //------------------------------------------------------------------------------
 void MainWindow::ClearTable()
@@ -409,7 +432,7 @@ void MainWindow::PlaceRects()
     for (qsizetype i = 0; i < qlistRects.size(); ++i)
     {
         //Поворачиваем детали вертикально
-        if((qlistRects.at(i).ui32RectW >= qlistRects.at(i).ui32RectH)||(qlistRects.at(i).ui32RectH > ui32MetW))
+        if(qlistRects.at(i).ui32RectH >= qlistRects.at(i).ui32RectW) //||(qlistRects.at(i).ui32RectH > ui32MetW))
         {
             stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectW;
             stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectH;
@@ -419,6 +442,7 @@ void MainWindow::PlaceRects()
             stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectH;
             stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectW;
         }
+        stctRectsSourceVert.rgbColor = qlistRects.at(i).rgbColor;
         qlistRectsSourceVert.append(stctRectsSourceVert);
         ui32MaxHeight += stctRectsSourceVert.ui32RectH;
     }
@@ -434,7 +458,7 @@ void MainWindow::PlaceRects()
         stctRectsDestination.ui32Y = ui32CurrH;
         stctRectsDestination.ui32W = qlistRectsSourceVert.at(i).ui32RectW;
         stctRectsDestination.ui32H = qlistRectsSourceVert.at(i).ui32RectH;
-        stctRectsDestination.rgbColor = ColorGenerator();
+        stctRectsDestination.rgbColor = qlistRectsSourceVert.at(i).rgbColor;
         ui32CurrH += stctRectsDestination.ui32H;
         qlistRectsDestination.append(stctRectsDestination);
     }
