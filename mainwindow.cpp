@@ -9,6 +9,7 @@
 #include <QPainter>
 #include <QFileDialog>
 #include <QColor>
+#include <QScreen>
 
 #define MET_W 286
 #define MET_H 15
@@ -23,6 +24,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    QRect rect = frameGeometry();
+    QScreen *screen = QGuiApplication::primaryScreen();
+    rect.moveCenter(screen->geometry().center());
+    move(rect.topLeft());
 
     qsrand(QTime::currentTime().msec());
     qtstrApplicationPath = QApplication::applicationDirPath();
@@ -250,7 +256,7 @@ void MainWindow::slotRectsLoad()
 {
     //Обработчик кнопки: Загрузить файл с размерами деталей
     QString srtFileName = QFileDialog::getOpenFileName(this, QString(""), qtstrApplicationPath,
-                                            "Objects (*.xml *.xml)");
+                                            "Objects (*.xml)");
     RectsXmlLoad(srtFileName);
 }
 //------------------------------------------------------------------------------
