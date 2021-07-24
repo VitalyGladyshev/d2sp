@@ -37,7 +37,7 @@ private:
     quint32 ui32TableRowsTotal;
     quint32 ui32TableRowsCurr;
 
-    bool bImgClean;
+    quint32 ui32MaxHeight;
 
     qint32 TestValue(QString strValue, quint32 ui32Border);
     void ErrorMessageBox(QString strMessageText);
@@ -49,15 +49,15 @@ private:
     void ClearTable();
     QRgb ColorGenerator();
 
-    struct StructRect
+    struct StructRect   //Структура с габаритами деталей
     {
         quint32 ui32RectW;
         quint32 ui32RectH;
     };
-    QList<StructRect> qlistRects;
+    QList<StructRect> qlistRects;   //Список деталей
 
-    QList<StructRect> qlistRectsSourceVert;
-    struct StructRectDest
+    QList<StructRect> qlistRectsSourceVert;   // Список источник
+    struct StructRectDest   //Структура с параметрами размещения
     {
         quint32 ui32X;
         quint32 ui32Y;
@@ -65,7 +65,7 @@ private:
         quint32 ui32H;
         QRgb rgbColor;
     };
-    QList<StructRectDest> qlistRectsDestination;
+    QList<StructRectDest> qlistRectsDestination;   //Список с параметрами размещения
 
 protected:
     void paintEvent(QPaintEvent *);

@@ -15,7 +15,7 @@
 #define MET_MAX_W 700
 #define MET_MAX_H 1000000
 
-#define MULTIPLIER 1.5
+#define MULTIPLIER 0.5   //Множитель в генераторе случайных размеров деталей
 //------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -82,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui32TableRowsTotal = 20;
     ui32TableRowsCurr = 0;
+    ui32MaxHeight = 0;
     QStringList horizontalHeader;
     horizontalHeader.append("Ширина");
     horizontalHeader.append("Длина");
@@ -97,7 +98,6 @@ MainWindow::MainWindow(QWidget *parent) :
     qlistRects.clear();
     qlistRectsSourceVert.clear();
     qlistRectsDestination.clear();
-    bImgClean = true;
     QWidget::repaint();
     // Загружаем список деталей
     RectsXmlLoad(qtstrApplicationPath + "/rects.xml");
@@ -106,7 +106,6 @@ MainWindow::MainWindow(QWidget *parent) :
 qint32 MainWindow::TestValue(QString strValue, quint32 ui32Border)
 {
     //Проверка корректности вводимого размера
-
     quint32 ui32Res = strValue.toUInt();
 
     if ((ui32Res)&&(ui32Res <= ui32Border))
@@ -121,6 +120,7 @@ qint32 MainWindow::TestValue(QString strValue, quint32 ui32Border)
 //------------------------------------------------------------------------------
 void MainWindow::MetToXml()
 {
+    //Сохраняем параметры листа в XML файл
     qtclMetFile.open(QIODevice::WriteOnly);
     QDomDocument doc("met");
     QDomElement metGeom = doc.createElement("geometry");
@@ -150,7 +150,6 @@ void MainWindow::MetToXml()
 void MainWindow::slotMetSet()
 {
     //Обработчик кнопки: Изменить размер листа металла
-
     qint32 i32Res = TestValue(ui->lineEdit_met_w_value->text(), MET_MAX_W);
     if (i32Res != -1)
         ui32MetW = i32Res;
@@ -192,7 +191,6 @@ void MainWindow::ErrorMessageBox(QString strMessageText)
 void MainWindow::slotRectSet()
 {
     //Обработчик кнопки: Добавить новую деталь
-
     qint32 i32Res = TestValue(ui->lineEdit_rect_w_value->text(), ui32MetW);
     if (i32Res != -1)
     {
@@ -233,14 +231,13 @@ void MainWindow::TableAddRow()
 void MainWindow::slotRectsLoad()
 {
     //Обработчик кнопки: Загрузить файл с размерами деталей
-
     QString srtFileName = QFileDialog::getOpenFileName(this, QString(""), qtstrApplicationPath,
                                             "Objects (*.xml *.xml)");
     RectsXmlLoad(srtFileName);
 }
 //------------------------------------------------------------------------------
 void MainWindow::RectsXmlLoad(QString strFileName)
-{
+{   //Загружаем детали из XML файла
     QFile qtclRectsCustFile;
     qtclRectsCustFile.setFileName(strFileName);
 
@@ -299,7 +296,7 @@ void MainWindow::slotRectsGenerate()
     StructRect stctRect;
     for(int i=0; i<10; i++)
     {
-        stctRect.ui32RectW = qrand() % (ui32MetW - 10) + 10;
+        stctRect.ui32RectW = qrand() % int(ui32MetW * MULTIPLIER - 10) + 10;
         stctRect.ui32RectH = qrand() % int(ui32MetW * MULTIPLIER - 10) + 10;
         qlistRects.append(stctRect);
         qDebug() << "\tШирина детали: " << stctRect.ui32RectW << " мм. Длина детали: " << stctRect.ui32RectH << " мм.";
@@ -322,7 +319,6 @@ void MainWindow::slotRectsClear()
     qlistRectsDestination.clear();
     ClearTable(); //Очищаем таблицу
     RectsToXML(); //Очищаем XML файл
-    bImgClean = true;
     QWidget::repaint(); //Очищаем изображение
 }
 //------------------------------------------------------------------------------
@@ -365,16 +361,26 @@ void MainWindow::RectsToXML()
 //------------------------------------------------------------------------------
 void MainWindow::paintEvent(QPaintEvent *)
 {
-    if (bImgClean)
-    { //Рисуем лист металла в масштабе
-        QPainter painter(this);
-//        QBrush brush(ColorGenerator(), Qt::SolidPattern);
-        QBrush brush(Qt::white, Qt::SolidPattern);
-        painter.fillRect(ui->widget_left_top->width() + 8,
-                         3,
-                         ui32MetW,
-                         ui->widget_viz->height()-3,
-                         brush);
+    QPainter painter(this);
+    //Рисуем чистый лист
+    QBrush brush(Qt::white, Qt::SolidPattern);
+    painter.fillRect(ui->widget_left_top->width() + 8,
+                     3,
+                     ui32MetW,
+                     ui->widget_viz->height()-3,
+                     brush);
+
+    if (qlistRectsDestination.size())
+    {
+        for (qsizetype i = 0; i < qlistRectsDestination.size(); ++i)
+        {
+            QBrush brush(qlistRectsDestination.at(i).rgbColor, Qt::SolidPattern);
+            painter.fillRect(ui->widget_left_top->width() + 8 + qlistRectsDestination.at(i).ui32X,
+                             3 + qlistRectsDestination.at(i).ui32Y,
+                             qlistRectsDestination.at(i).ui32W,
+                             qlistRectsDestination.at(i).ui32H,
+                             brush);
+        }
     }
 }
 //------------------------------------------------------------------------------
@@ -393,27 +399,62 @@ void MainWindow::ClearTable()
 void MainWindow::PlaceRects()
 {
     //Размещаем детали
-    bImgClean = false;
     qlistRectsSourceVert.clear();
     qlistRectsDestination.clear();
     qDebug() << "Размещаем детали" << endl; //Отладочное сообщение
 
+    //Формируем список источник
+    StructRect stctRectsSourceVert;
+    ui32MaxHeight = 0;
+    for (qsizetype i = 0; i < qlistRects.size(); ++i)
+    {
+        //Поворачиваем детали вертикально
+        if((qlistRects.at(i).ui32RectW >= qlistRects.at(i).ui32RectH)||(qlistRects.at(i).ui32RectH > ui32MetW))
+        {
+            stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectW;
+            stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectH;
+        }
+        else
+        {
+            stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectH;
+            stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectW;
+        }
+        qlistRectsSourceVert.append(stctRectsSourceVert);
+        ui32MaxHeight += stctRectsSourceVert.ui32RectH;
+    }
+    qDebug() << "Максимальная высота: " << ui32MaxHeight << endl;
 
+    //Формируем список назначения (с параметрами размещения)
+    StructRectDest stctRectsDestination;
+    quint32 ui32CurrH = 0;
+//    quint32 ui32CurrW = 0;
+    for (qsizetype i = 0; i < qlistRectsSourceVert.size(); ++i)
+    {//Отладочный алгоритм (ставим вертикально все подряд)
+        stctRectsDestination.ui32X = 0;
+        stctRectsDestination.ui32Y = ui32CurrH;
+        stctRectsDestination.ui32W = qlistRectsSourceVert.at(i).ui32RectW;
+        stctRectsDestination.ui32H = qlistRectsSourceVert.at(i).ui32RectH;
+        stctRectsDestination.rgbColor = ColorGenerator();
+        ui32CurrH += stctRectsDestination.ui32H;
+        qlistRectsDestination.append(stctRectsDestination);
+    }
+    QWidget::repaint();
 }
 //------------------------------------------------------------------------------
 QRgb MainWindow::ColorGenerator()
 {
-    //Генератор цвета
-    QRgb rgb;
+    //Генератор цвета  //    QRgb rgb;
+    int r, g, b;
+    do
+    {
+        r = rand() % 255;
+        g = rand() % 255;
+        b = rand() % 255;
+    }
+    while(r+g+b == 765);
 
-    int r = rand() % 255;
-    int g = rand() % 255;
-    int b = rand() % 255;
-
-    rgb = qRgba(r, g, b, 255);
-
-    qDebug() << "Генерируем случайный цвет" << rgb << QColor::fromRgb(rgb) << endl; //Отладочное сообщение
-    return rgb;
+//    qDebug() << "Генерируем случайный цвет" << rgb << QColor::fromRgb(rgb) << endl; //Отладочное сообщение
+    return qRgba(r, g, b, 255);
 }
 //------------------------------------------------------------------------------
 MainWindow::~MainWindow()
