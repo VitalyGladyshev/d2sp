@@ -48,6 +48,7 @@ public slots:
     void slotRectsLoad();
     void slotRectsGenerate();
     void slotRectsClear();
+    void slotComboBoxIndexCh();
 
 private:
     Ui::MainWindow *ui;
@@ -85,7 +86,7 @@ private:
     void RectsXmlLoad(QString strFileName);
     void ClearTable();
     QRgb ColorGenerator();
-    bool IsAllAllocated(QList<StructRect> stctInc);
+//    bool IsAllAllocated(QList<StructRect> stctInc);
 
     struct StructFloor   //Структура с параметрами уровня
     {
