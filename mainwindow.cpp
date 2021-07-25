@@ -465,6 +465,7 @@ void MainWindow::paintEvent(QPaintEvent *)
                     ui32H = (unsigned int)ui->widget_viz->height() - (3 + 1 + (*ptDest).at(i).ui32Y);
                 else
                     ui32H = (*ptDest).at(i).ui32H;
+
                 painter.fillRect(ui->widget_left_top->width() + 8 + 1 + (*ptDest).at(i).ui32X,
                                  3 + 1 + (*ptDest).at(i).ui32Y,
                                  (*ptDest).at(i).ui32W,
