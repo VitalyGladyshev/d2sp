@@ -10,6 +10,8 @@
 #include <QFileDialog>
 #include <QColor>
 #include <QScreen>
+#include <algorithm>
+#include <QVector>
 
 #define MET_W 286
 #define MET_H 15
@@ -87,21 +89,37 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pushButton_rects_generate, SIGNAL(pressed()), SLOT(slotRectsGenerate()));
     connect(ui->pushButton_rects_clear, SIGNAL(pressed()), SLOT(slotRectsClear()));
 
-    ui->comboBox_algo->addItem("NFDH (Next Fit Decreasing High)");
-    ui->comboBox_algo->addItem("FCNR (Floor Ceiling No Rotation)");
+    ui->comboBox_algo->addItem("FFDH (First Fit Decreasing High)");
+    ui->comboBox_algo->addItem("FFDHV (First Fit Decreasing High Vert)");
+    ui->comboBox_algo->addItem("FFDHH (First Fit Decreasing High Hor)");
+//    ui->comboBox_algo->addItem("FCNR (Floor Ceiling No Rotation)");
+//    ui->comboBox_algo->addItem("FCV (Floor Ceiling Vert)");
 
     ui32MaxHeight = 0;
-    ui32NFDHHeight = 0;
-    ui32FCNRHeight = 0;
+    ui32FFDHHeight = 0;
+    ui32FFDHVHeight = 0;
+    ui32FFDHHHeight = 0;
+//    ui32FCNRHeight = 0;
+//    ui32FCVHeight = 0;
+
     pqtlbMaxHeight = new QLabel(this);
     pqtlbMaxHeight->setText("Максимальный расход: ");
     ui->statusBar->addWidget(pqtlbMaxHeight);
-    pqtlbNFDHHeight = new QLabel(this);
-    pqtlbNFDHHeight->setText("NFDH расход: ");
-    ui->statusBar->addWidget(pqtlbNFDHHeight);
-    pqtlbFCNRHeight = new QLabel(this);
-    pqtlbFCNRHeight->setText("FCNR расход: ");
-    ui->statusBar->addWidget(pqtlbFCNRHeight);
+    pqtlbFFDHHeight = new QLabel(this);
+    pqtlbFFDHHeight->setText(" FFDH: ");
+    ui->statusBar->addWidget(pqtlbFFDHHeight);
+    pqtlbFFDHVHeight = new QLabel(this);
+    pqtlbFFDHVHeight->setText(" FFDHV: ");
+    ui->statusBar->addWidget(pqtlbFFDHVHeight);
+    pqtlbFFDHHHeight = new QLabel(this);
+    pqtlbFFDHHHeight->setText(" FFDHH: ");
+    ui->statusBar->addWidget(pqtlbFFDHHHeight);
+//    pqtlbFCNRHeight = new QLabel(this);
+//    pqtlbFCNRHeight->setText(" FCNR: ");
+//    ui->statusBar->addWidget(pqtlbFCNRHeight);
+//    pqtlbFCVHeight = new QLabel(this);
+//    pqtlbFCVHeight->setText(" FCV: ");
+//    ui->statusBar->addWidget(pqtlbFCVHeight);
 
     ui32TableRowsTotal = 20;
     ui32TableRowsCurr = 0;
@@ -120,7 +138,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     qlistRects.clear();
     qlistRectsSourceVert.clear();
-    qlistRectsDestination.clear();
+    qlistRectsSourceHor.clear();
+    qlistRectsDestinationFFDH.clear();
+    qlistRectsDestinationFFDHV.clear();
+    qlistRectsDestinationFFDHH.clear();
+    qlistRectsDestinationFCNR.clear();
+    qlistRectsDestinationFCV.clear();
     QWidget::repaint();
     // Загружаем список деталей
     RectsXmlLoad(qtstrApplicationPath + "/rects.xml");
@@ -347,7 +370,12 @@ void MainWindow::slotRectsClear()
 
     qlistRects.clear();
     qlistRectsSourceVert.clear();
-    qlistRectsDestination.clear();
+    qlistRectsSourceHor.clear();
+    qlistRectsDestinationFFDH.clear();
+    qlistRectsDestinationFFDHV.clear();
+    qlistRectsDestinationFFDHH.clear();
+    qlistRectsDestinationFCNR.clear();
+    qlistRectsDestinationFCV.clear();
     ClearTable(); //Очищаем таблицу
     RectsToXML(); //Очищаем XML файл
     QWidget::repaint(); //Очищаем изображение
@@ -402,27 +430,39 @@ void MainWindow::paintEvent(QPaintEvent *)
     QBrush brush(Qt::white, Qt::SolidPattern);
     painter.fillRect(ui->widget_left_top->width() + 8,
                      3,
-                     ui32MetW,
+                     ui32MetW+2,
                      ui->widget_viz->height()-3,
                      brush);
+    painter.setPen(Qt::black);
+    painter.drawRect(QRect(ui->widget_left_top->width() + 8,
+                           3,
+                           ui32MetW+2,
+                           ui->widget_viz->height()-3));
 
-    if (qlistRectsDestination.size())
+
+
+    if (qlistRectsDestinationFFDH.size())
     {
-        for (qsizetype i = 0; i < qlistRectsDestination.size(); ++i)
+        for (qsizetype i = 0; i < qlistRectsDestinationFFDH.size(); ++i)
         {
-            QBrush brush(qlistRectsDestination.at(i).rgbColor, Qt::SolidPattern);
-            if (3 + qlistRectsDestination.at(i).ui32Y < (unsigned int)ui->widget_viz->height())
+            QBrush brush(qlistRectsDestinationFFDH.at(i).rgbColor, Qt::Dense3Pattern);   //Qt::SolidPattern);
+            if (3 + qlistRectsDestinationFFDH.at(i).ui32Y < (unsigned int)ui->widget_viz->height())
             {
                 quint32 ui32H;
-                if (3 + qlistRectsDestination.at(i).ui32Y + qlistRectsDestination.at(i).ui32H > (unsigned int)ui->widget_viz->height())
-                    ui32H = (unsigned int)ui->widget_viz->height() - (3 + qlistRectsDestination.at(i).ui32Y);
+                if (3 + qlistRectsDestinationFFDH.at(i).ui32Y + qlistRectsDestinationFFDH.at(i).ui32H > (unsigned int)ui->widget_viz->height())
+                    ui32H = (unsigned int)ui->widget_viz->height() - (3 + 1 + qlistRectsDestinationFFDH.at(i).ui32Y);
                 else
-                    ui32H = qlistRectsDestination.at(i).ui32H;
-                painter.fillRect(ui->widget_left_top->width() + 8 + qlistRectsDestination.at(i).ui32X,
-                                 3 + qlistRectsDestination.at(i).ui32Y,
-                                 qlistRectsDestination.at(i).ui32W,
+                    ui32H = qlistRectsDestinationFFDH.at(i).ui32H;
+                painter.fillRect(ui->widget_left_top->width() + 8 + 1 + qlistRectsDestinationFFDH.at(i).ui32X,
+                                 3 + 1 + qlistRectsDestinationFFDH.at(i).ui32Y,
+                                 qlistRectsDestinationFFDH.at(i).ui32W,
                                  ui32H,
                                  brush);
+                painter.setPen(Qt::black); //qlistRectsDestination.at(i).rgbColor);
+                painter.drawRect(QRect(ui->widget_left_top->width() + 8 + 1 + qlistRectsDestinationFFDH.at(i).ui32X,
+                                       3 + 1 + qlistRectsDestinationFFDH.at(i).ui32Y,
+                                       qlistRectsDestinationFFDH.at(i).ui32W,
+                                       ui32H));
             }
         }
     }
@@ -441,50 +481,281 @@ void MainWindow::ClearTable()
     ui32TableRowsCurr = 0;
 }
 //------------------------------------------------------------------------------
+bool WidthGreater(const MainWindow::StructRect& El_1, const MainWindow::StructRect& El_2)
+{//Функция для сортировки по невозрастнию
+    return El_1.ui32RectH > El_2.ui32RectH;
+}
+//------------------------------------------------------------------------------
+bool MainWindow::IsAllAllocated(QList<StructRect> stctInc)
+{
+    bool bAllAllocated = true;
+    for (qsizetype i = 0; i < stctInc.size(); ++i)
+        if (!stctInc.at(i).bAllocate)
+        {
+            bAllAllocated = false;
+            break;
+        }
+
+    return bAllAllocated;
+}
+//------------------------------------------------------------------------------
 void MainWindow::PlaceRects()
 {
     //Размещаем детали
-    qlistRectsSourceVert.clear();
-    qlistRectsDestination.clear();
     qDebug() << "Размещаем детали" << endl; //Отладочное сообщение
 
-    //Формируем список источник
-    StructRect stctRectsSourceVert;
+//Подготовка: готовим списки источники, рассчитываем максимальный расход
     ui32MaxHeight = 0;
-    for (qsizetype i = 0; i < qlistRects.size(); ++i)
+    qlistRectsSourceVert.clear();
+    qlistRectsSourceHor.clear();
+
+    StructRect stctRectsSourceVert;
+    StructRect stctRectsSourceHor;
+    for (qsizetype i = 0; i < qlistRects.size(); i++)
     {
+        qlistRects[i].bAllocate = false;
         //Поворачиваем детали вертикально
-        if(qlistRects.at(i).ui32RectH >= qlistRects.at(i).ui32RectW) //||(qlistRects.at(i).ui32RectH > ui32MetW))
+        if(qlistRects.at(i).ui32RectH >= qlistRects.at(i).ui32RectW)
         {
+            ui32MaxHeight += qlistRects.at(i).ui32RectH;
             stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectW;
             stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectH;
         }
         else
         {
+            ui32MaxHeight += qlistRects.at(i).ui32RectW;
             stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectH;
             stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectW;
         }
         stctRectsSourceVert.rgbColor = qlistRects.at(i).rgbColor;
+        stctRectsSourceVert.bAllocate = false;
         qlistRectsSourceVert.append(stctRectsSourceVert);
-        ui32MaxHeight += stctRectsSourceVert.ui32RectH;
+
+        //Поворачиваем детали горизонтально
+        if((qlistRects.at(i).ui32RectW >= qlistRects.at(i).ui32RectH)||(qlistRects.at(i).ui32RectH > ui32MetW))
+        {
+            stctRectsSourceHor.ui32RectW = qlistRects.at(i).ui32RectW;
+            stctRectsSourceHor.ui32RectH = qlistRects.at(i).ui32RectH;
+        }
+        else
+        {
+            stctRectsSourceHor.ui32RectW = qlistRects.at(i).ui32RectH;
+            stctRectsSourceHor.ui32RectH = qlistRects.at(i).ui32RectW;
+        }
+        stctRectsSourceHor.rgbColor = qlistRects.at(i).rgbColor;
+        stctRectsSourceHor.bAllocate = false;
+        qlistRectsSourceHor.append(stctRectsSourceHor);
     }
     qDebug() << "Максимальный расход: " << ui32MaxHeight << " мм." << endl;
     pqtlbMaxHeight->setText(QString("Максимальный расход: %1 мм").arg(ui32MaxHeight));
 
-    //Формируем список назначения (с параметрами размещения)
-    StructRectDest stctRectsDestination;
-    quint32 ui32CurrH = 0;
-//    quint32 ui32CurrW = 0;
-    for (qsizetype i = 0; i < qlistRectsSourceVert.size(); ++i)
-    {//Отладочный алгоритм (ставим вертикально все подряд)
-        stctRectsDestination.ui32X = 0;
-        stctRectsDestination.ui32Y = ui32CurrH;
-        stctRectsDestination.ui32W = qlistRectsSourceVert.at(i).ui32RectW;
-        stctRectsDestination.ui32H = qlistRectsSourceVert.at(i).ui32RectH;
-        stctRectsDestination.rgbColor = qlistRectsSourceVert.at(i).rgbColor;
-        ui32CurrH += stctRectsDestination.ui32H;
-        qlistRectsDestination.append(stctRectsDestination);
+    if (qlistRects.size())
+    {
+        std::sort(qlistRects.begin(), qlistRects.end(), &WidthGreater);
+        std::sort(qlistRectsSourceVert.begin(), qlistRectsSourceVert.end(), &WidthGreater);
+        std::sort(qlistRectsSourceHor.begin(), qlistRectsSourceHor.end(), &WidthGreater);
     }
+
+//FFDH (First Fit Decreasing High)
+    qlistRectsDestinationFFDH.clear();
+    //Формируем список назначения (с параметрами размещения)
+    ui32FFDHHeight = 0;
+    if(qlistRects.size())
+    {
+        StructRectDest stctRectsDestination;
+        StructFloor stctFloor;
+        stctFloor.ui32FloorW = 0;
+        stctFloor.ui32FloorH = 0;
+        stctFloor.ui32FloorHF = qlistRects.at(0).ui32RectH;
+        ui32FFDHHeight += qlistRects.at(0).ui32RectH;
+        QList<StructFloor> qlistFloor;
+        qlistFloor.append(stctFloor);
+
+        for (qsizetype i = 0; i < qlistRects.size(); i++)
+        {
+            int FloorNumber = 0;
+            for (; FloorNumber < qlistFloor.size(); FloorNumber++)
+            {
+                if (qlistRects.at(i).ui32RectW <= ui32MetW - qlistFloor.at(FloorNumber).ui32FloorW)
+                {
+                    qlistRects[i].bAllocate = true;
+                    break;
+                }
+            }
+            if (!qlistRects.at(i).bAllocate)
+            {
+                stctFloor.ui32FloorW = 0;
+                stctFloor.ui32FloorH = qlistFloor.at(FloorNumber-1).ui32FloorHF + 1;
+                stctFloor.ui32FloorHF = qlistFloor.at(FloorNumber-1).ui32FloorHF + qlistRects.at(i).ui32RectH + 1;
+                ui32FFDHHeight += qlistRects.at(i).ui32RectH;
+                qlistFloor.append(stctFloor);
+            }
+
+            stctRectsDestination.ui32X = qlistFloor.at(FloorNumber).ui32FloorW;
+            stctRectsDestination.ui32Y = qlistFloor.at(FloorNumber).ui32FloorH;
+            stctRectsDestination.ui32W = qlistRects.at(i).ui32RectW;
+            stctRectsDestination.ui32H = qlistRects.at(i).ui32RectH;
+            stctRectsDestination.rgbColor = qlistRects.at(i).rgbColor;
+            qlistFloor[FloorNumber].ui32FloorW += stctRectsDestination.ui32W + 1;
+            qlistRectsDestinationFFDH.append(stctRectsDestination);
+        }
+    }
+    qDebug() << "FFDH расход: " << ui32FFDHHeight << " мм." << endl;
+    pqtlbFFDHHeight->setText(QString(" FFDH: %1 ").arg(ui32FFDHHeight));
+
+//FFDHV (First Fit Decreasing High Vert)
+    qlistRectsDestinationFFDHV.clear();
+    //Формируем список назначения (с параметрами размещения)
+    ui32FFDHVHeight = 0;
+    if(qlistRectsSourceVert.size())
+    {
+        StructRectDest stctRectsDestination;
+        StructFloor stctFloor;
+        stctFloor.ui32FloorW = 0;
+        stctFloor.ui32FloorH = 0;
+        stctFloor.ui32FloorHF = qlistRectsSourceVert.at(0).ui32RectH;
+        ui32FFDHVHeight += qlistRectsSourceVert.at(0).ui32RectH;
+        QList<StructFloor> qlistFloor;
+        qlistFloor.append(stctFloor);
+
+        for (qsizetype i = 0; i < qlistRectsSourceVert.size(); i++)
+        {
+            int FloorNumber = 0;
+            for (; FloorNumber < qlistFloor.size(); FloorNumber++)
+            {
+                if (qlistRectsSourceVert.at(i).ui32RectW <= ui32MetW - qlistFloor.at(FloorNumber).ui32FloorW)
+                {
+                    qlistRectsSourceVert[i].bAllocate = true;
+                    break;
+                }
+            }
+            if (!qlistRectsSourceVert.at(i).bAllocate)
+            {
+                stctFloor.ui32FloorW = 0;
+                stctFloor.ui32FloorH = qlistFloor.at(FloorNumber-1).ui32FloorHF + 1;
+                stctFloor.ui32FloorHF = qlistFloor.at(FloorNumber-1).ui32FloorHF + qlistRectsSourceVert.at(i).ui32RectH + 1;
+                ui32FFDHVHeight += qlistRectsSourceVert.at(i).ui32RectH;
+                qlistFloor.append(stctFloor);
+            }
+
+            stctRectsDestination.ui32X = qlistFloor.at(FloorNumber).ui32FloorW;
+            stctRectsDestination.ui32Y = qlistFloor.at(FloorNumber).ui32FloorH;
+            stctRectsDestination.ui32W = qlistRectsSourceVert.at(i).ui32RectW;
+            stctRectsDestination.ui32H = qlistRectsSourceVert.at(i).ui32RectH;
+            stctRectsDestination.rgbColor = qlistRectsSourceVert.at(i).rgbColor;
+            qlistFloor[FloorNumber].ui32FloorW += stctRectsDestination.ui32W + 1;
+            qlistRectsDestinationFFDHV.append(stctRectsDestination);
+        }
+    }
+    qDebug() << "FFDHV расход: " << ui32FFDHVHeight << " мм." << endl;
+    pqtlbFFDHVHeight->setText(QString(" FFDHV: %1 ").arg(ui32FFDHVHeight));
+
+//FFDHH (First Fit Decreasing High Hor)
+    qlistRectsDestinationFFDHH.clear();
+    //Формируем список назначения (с параметрами размещения)
+    ui32FFDHHHeight = 0;
+    if(qlistRectsSourceHor.size())
+    {
+        StructRectDest stctRectsDestination;
+        StructFloor stctFloor;
+        stctFloor.ui32FloorW = 0;
+        stctFloor.ui32FloorH = 0;
+        stctFloor.ui32FloorHF = qlistRectsSourceHor.at(0).ui32RectH;
+        ui32FFDHHHeight += qlistRectsSourceHor.at(0).ui32RectH;
+        QList<StructFloor> qlistFloor;
+        qlistFloor.append(stctFloor);
+
+        for (qsizetype i = 0; i < qlistRectsSourceHor.size(); i++)
+        {
+            int FloorNumber = 0;
+            for (; FloorNumber < qlistFloor.size(); FloorNumber++)
+            {
+                if (qlistRectsSourceHor.at(i).ui32RectW <= ui32MetW - qlistFloor.at(FloorNumber).ui32FloorW)
+                {
+                    qlistRectsSourceHor[i].bAllocate = true;
+                    break;
+                }
+            }
+            if (!qlistRectsSourceHor.at(i).bAllocate)
+            {
+                stctFloor.ui32FloorW = 0;
+                stctFloor.ui32FloorH = qlistFloor.at(FloorNumber-1).ui32FloorHF + 1;
+                stctFloor.ui32FloorHF = qlistFloor.at(FloorNumber-1).ui32FloorHF + qlistRectsSourceHor.at(i).ui32RectH + 1;
+                ui32FFDHHHeight += qlistRectsSourceHor.at(i).ui32RectH;
+                qlistFloor.append(stctFloor);
+            }
+
+            stctRectsDestination.ui32X = qlistFloor.at(FloorNumber).ui32FloorW;
+            stctRectsDestination.ui32Y = qlistFloor.at(FloorNumber).ui32FloorH;
+            stctRectsDestination.ui32W = qlistRectsSourceHor.at(i).ui32RectW;
+            stctRectsDestination.ui32H = qlistRectsSourceHor.at(i).ui32RectH;
+            stctRectsDestination.rgbColor = qlistRectsSourceHor.at(i).rgbColor;
+            qlistFloor[FloorNumber].ui32FloorW += stctRectsDestination.ui32W + 1;
+            qlistRectsDestinationFFDHH.append(stctRectsDestination);
+        }
+    }
+    qDebug() << "FFDHH расход: " << ui32FFDHHHeight << " мм." << endl;
+    pqtlbFFDHHHeight->setText(QString(" FFDHH: %1 ").arg(ui32FFDHHHeight));
+
+//FCNR (Floor Ceiling No Rotation)
+
+
+//FCV (Floor Ceiling Vert)
+//    qlistRectsSourceVert.clear();
+//    qlistRectsDestination.clear();
+
+//    //Формируем список источник
+//    StructRect stctRectsSourceVert;
+//    ui32MaxHeight = 0;
+//    for (qsizetype i = 0; i < qlistRects.size(); ++i)
+//    {
+//        //Поворачиваем детали вертикально
+//        if(qlistRects.at(i).ui32RectH >= qlistRects.at(i).ui32RectW) //||(qlistRects.at(i).ui32RectH > ui32MetW))
+//        {
+//            stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectW;
+//            stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectH;
+//        }
+//        else
+//        {
+//            stctRectsSourceVert.ui32RectW = qlistRects.at(i).ui32RectH;
+//            stctRectsSourceVert.ui32RectH = qlistRects.at(i).ui32RectW;
+//        }
+//        stctRectsSourceVert.rgbColor = qlistRects.at(i).rgbColor;
+//        qlistRectsSourceVert.append(stctRectsSourceVert);
+//        ui32MaxHeight += stctRectsSourceVert.ui32RectH;
+//    }
+//    qDebug() << "Максимальный расход: " << ui32MaxHeight << " мм." << endl;
+//    pqtlbMaxHeight->setText(QString("Максимальный расход: %1 мм").arg(ui32MaxHeight));
+
+//    //Формируем список назначения (с параметрами размещения)
+//    StructRectDest stctRectsDestination;
+//    quint32 ui32CurrH = 0;
+//    //quint32 ui32CurrW = 0;
+//    for (qsizetype i = 0; i < qlistRectsSourceVert.size(); ++i)
+//    {//Отладочный алгоритм (ставим вертикально все подряд)
+//        stctRectsDestination.ui32X = 0;
+//        stctRectsDestination.ui32Y = ui32CurrH;
+//        stctRectsDestination.ui32W = qlistRectsSourceVert.at(i).ui32RectW;
+//        stctRectsDestination.ui32H = qlistRectsSourceVert.at(i).ui32RectH;
+//        stctRectsDestination.rgbColor = qlistRectsSourceVert.at(i).rgbColor;
+//        ui32CurrH += stctRectsDestination.ui32H + 1;
+//        qlistRectsDestination.append(stctRectsDestination);
+//    }
+
+    QVector<quint32> vInd;
+    vInd.push_back(ui32FFDHHeight);
+    vInd.push_back(ui32FFDHVHeight);
+    vInd.push_back(ui32FFDHHHeight);
+    int ind = 0;
+    quint32 ui32MinV = ui32MaxHeight;
+    for(int i = 0; i < vInd.size(); i++)
+        if (ui32MinV >= vInd[i])
+        {
+            ui32MinV = vInd[i];
+            ind = i;
+        }
+
+    ui->comboBox_algo->setCurrentIndex(ind);
     QWidget::repaint();
 }
 //------------------------------------------------------------------------------
@@ -498,7 +769,7 @@ QRgb MainWindow::ColorGenerator()
         g = rand() % 255;
         b = rand() % 255;
     }
-    while(r+g+b == 765);
+    while((r+g+b > 650)||(r+g+b < 300));
 
 //    qDebug() << "Генерируем случайный цвет" << rgb << QColor::fromRgb(rgb) << endl; //Отладочное сообщение
     return qRgba(r, g, b, 255);

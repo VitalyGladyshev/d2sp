@@ -17,6 +17,31 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    struct StructRect   //Структура с габаритами деталей
+    {
+        quint32 ui32RectW;
+        quint32 ui32RectH;
+        QRgb rgbColor;
+        bool bAllocate;
+    };
+    QList<StructRect> qlistRects;   //Список деталей
+
+    QList<StructRect> qlistRectsSourceVert;   //Список источник - детали повёрнуты вертикально
+    QList<StructRect> qlistRectsSourceHor;   //Список источник - детали повёрнуты горизонтально
+    struct StructRectDest   //Структура с параметрами размещения
+    {
+        quint32 ui32X;
+        quint32 ui32Y;
+        quint32 ui32W;
+        quint32 ui32H;
+        QRgb rgbColor;
+    };
+    QList<StructRectDest> qlistRectsDestinationFFDH;   //Список с параметрами размещения FFDH
+    QList<StructRectDest> qlistRectsDestinationFFDHV;   //Список с параметрами размещения FFDHV
+    QList<StructRectDest> qlistRectsDestinationFFDHH;   //Список с параметрами размещения FFDHH
+    QList<StructRectDest> qlistRectsDestinationFCNR;   //Список с параметрами размещения FCNR
+    QList<StructRectDest> qlistRectsDestinationFCV;   //Список с параметрами размещения FCV
+
 public slots:
     void slotMetSet();
     void slotRectSet();
@@ -40,10 +65,16 @@ private:
 
     quint32 ui32MaxHeight;
     QLabel *pqtlbMaxHeight;
-    quint32 ui32NFDHHeight;
-    QLabel *pqtlbNFDHHeight;
+    quint32 ui32FFDHHeight;
+    QLabel *pqtlbFFDHHeight;
+    quint32 ui32FFDHVHeight;
+    QLabel *pqtlbFFDHVHeight;
+    quint32 ui32FFDHHHeight;
+    QLabel *pqtlbFFDHHHeight;
     quint32 ui32FCNRHeight;
     QLabel *pqtlbFCNRHeight;
+    quint32 ui32FCVHeight;
+    QLabel *pqtlbFCVHeight;
 
     qint32 TestValue(QString strValue, quint32 ui32Border);
     void ErrorMessageBox(QString strMessageText);
@@ -54,25 +85,14 @@ private:
     void RectsXmlLoad(QString strFileName);
     void ClearTable();
     QRgb ColorGenerator();
+    bool IsAllAllocated(QList<StructRect> stctInc);
 
-    struct StructRect   //Структура с габаритами деталей
+    struct StructFloor   //Структура с параметрами уровня
     {
-        quint32 ui32RectW;
-        quint32 ui32RectH;
-        QRgb rgbColor;
+        quint32 ui32FloorW;
+        quint32 ui32FloorH;
+        quint32 ui32FloorHF;
     };
-    QList<StructRect> qlistRects;   //Список деталей
-
-    QList<StructRect> qlistRectsSourceVert;   // Список источник
-    struct StructRectDest   //Структура с параметрами размещения
-    {
-        quint32 ui32X;
-        quint32 ui32Y;
-        quint32 ui32W;
-        quint32 ui32H;
-        QRgb rgbColor;
-    };
-    QList<StructRectDest> qlistRectsDestination;   //Список с параметрами размещения
 
 protected:
     void paintEvent(QPaintEvent *);
